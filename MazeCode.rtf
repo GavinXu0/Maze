@@ -1,0 +1,345 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1504\cocoasubrtf760
+{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\margl1440\margr1440\vieww15220\viewh8400\viewkind0
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 //Gavin Xu jgxu\
+//20623743\
+//Assignment 9\
+/*\
+\
+ This program will create a grid with a user-controlled runner image, a red enemy, and a black square that represents points.\
+ The objective of this game is to collect as many points as possible and then make it to the safe zone, the most bottom-right square.\
+ \
+ Once you feel that you're getting too nervous, run for the safe zone.\
+ The more points you collect, the more the background will change colours.\
+ Press 'r' to reset your guy back to the first square when you're being cornered!\
+ \
+ 0-3 points  = Grey background\
+ 4-5 points  = Magenta background\
+ 6-8 points  = Violet background\
+ 9-10 points = Blue background\
+ 11-14 points = Light green background\
+ 15 points +  = Black background (Makes it impossible to see, so good luck)\
+ \
+ Please note that the enemy can move diagonally so if it's right behind you and you make a move only to be met by "You lose", it's because\
+ it moved diagonally. and killed you.\
+ \
+ */\
+ \
+PImage imgRunner;                                                                           //Image user will control\
+PImage imgAngryFace;                                                                        //Image that will be chasing user\
+PImage imgPlus;                                                                             //Image that represents points\
+\
+int mazeSizeX = 30;                                                                         //Number of maze units in terms of X (ie. 30 possible x spaces for user to be in)\
+int mazeSizeY = 20;                                                                         //Number of maze units in terms of Y (ie. 20 possible y spaces for user to be in)\
+\
+int coordinateX;                                                                            //x-coordinate of the player's block\
+int coordinateY;                                                                            //y-coordinate of the player's block\
+\
+int chaseX;                                                                                 //X coordinate of chasing block\
+int chaseY;                                                                                 //Y coordinate of chasing block\
+\
+int currentSpotX;                                                                           //Used for calculating x-coordinate of the user controlled point when arrow keys pressed\
+int currentSpotY;                                                                           //Used for calculating y-coordinate of the user controlled point when arrow keys pressed\
+\
+int xIndice = 1;                                                                            //Point begins at first square for x\
+int yIndice = 1;                                                                            //Point begins at first square for y                      \
+\
+int randomPointX;                                                                           //X coordinate of point's random location\
+int randomPointY;                                                                           //Y coordinate of point's random location\
+\
+int pointCounter = 0;                                                                       //Tracks user's points\
+\
+boolean gameRunning = true;                                                                 //Checks if game is running\
+boolean readInstructions = true;                                                            //Used for when user is done reading instructions, will begin game\
+boolean win;                                                                                //Used to store if user wins or loses\
+\
+void setup() \{\
+  imgRunner = loadImage("Runner.png");                                                      //Image of person the user will control loaded\
+  imgAngryFace = loadImage("AngryFace.jpg");                                                //Image of angry face loaded\
+  imgPlus = loadImage("plus.png");                                                          //Image of a plus sign loaded\
+\
+  //Begins by displaying instructions and setting the user-controlled block's coordinates\
+  fill(0);                                                                                  //Points block is black\
+  size (901, 601);                                                                          //Size of the canvas\
+  rect(pointX(), pointY(), 30, 30);                                                         //Spawn the first points block\
+\
+  coordinateX = currentSpotX = 15;                                                          //Beginning X coordinate of maze\
+  coordinateY = currentSpotY = 15;                                                          //Beginning Y coordinate of maze\
+\
+  chaseX = 870;                                                                             //Starting x coordinate of the chasing dot\
+  chaseY = 30;                                                                              //Starting y coordinate of the chasing dot\
+\
+  Instructions();                                                                           //Display the instructions\
+\}\
+\
+void draw() \{\
+\
+  //When the game is not over & User is done reading instructions\
+  if (gameRunning == true && readInstructions == false) \{\
+\
+    //Background colour changes as number of points collected goes up\
+    if (pointCounter < 3) \{\
+      background(255);                                                                     //Grey background\
+    \} else if (pointCounter <= 5) \{\
+      background(237, 175, 231);                                                           //Magenta background\
+    \} else if (pointCounter < 8) \{\
+      background(199, 0, 255);                                                             //Violet background\
+    \} else if (pointCounter < 11) \{\
+      background(0, 0, 255);                                                               //Blue background\
+    \} else if (pointCounter < 15) \{\
+      background(8, 255, 79);                                                              //Light green background\
+    \} else \{\
+      background(0);                                                                       //Black background (to be challenging by making it impossible to see)\
+    \}\
+\
+    //Drawing the grid using a nested loop\
+    for (int x = 0; x < mazeSizeX + 1; x++) \{\
+      for (int y = 0; y < mazeSizeY + 1; y++) \{\
+\
+        //Grid\
+        strokeWeight(1);\
+        line(x * 30, 0, x * 30, height);                                                   //Vertical lines\
+        line(0, y * 30, width, y * 30);                                                    //Horizontal lines\
+      \}\
+    \}\
+\
+    for (int i = 0; i < 30; i ++) \{   \
+      //Controlled dot's coordinates\
+      coordinateX = currentSpotX * (xIndice);                                              //Sets point's x coordinate\
+      coordinateY = currentSpotY * (yIndice);                                              //Sets point's y cooridnate\
+\
+      coordinateX = constrain(coordinateX, 15, 885);                                       //Constrains x coordinate of the point inside of the maze\
+      coordinateY = constrain(coordinateY, 15, 585);                                       //Constrains y coordinate of the point inside of the maze\
+\
+      //Checking if the player's block is on the same spot as a points block\
+      if (coordinateX >= randomPointX && coordinateX < randomPointX + 30\
+        && coordinateY >= randomPointY && coordinateY < randomPointY + 30) \{        \
+        pointCounter += 1;                                                                 //User gets a point for touching it\
+        pointX();\
+        pointY();                                                                          //When the player touches the points block, a new one is spawned\
+      \} \
+\
+      //Displaying the number of points the user got\
+      textSize(50);\
+      fill(255, 0, 0);                                                                   	 //Will be displayed in red [FILL BASIC REQUIREMENT]\
+      text("Points:", 580, 100);                                                          //Describes what the following number is (number of points user has)\
+      text(pointCounter, 750, 100);                                                   //The number of points the user has is printed out\
+\
+      //Drawing the user controlled block\
+      image(imgRunner, coordinateX - 15, coordinateY - 15, 30, 30);                       //Drawing the user controlled image\
+\
+      //Drawing the points\
+      image(imgPlus, randomPointX, randomPointY, 30, 30);                                 //Drawing the points image\
+\
+      //Drawing the chaser block\
+      image(imgAngryFace, chaseX, chaseY, 30, 30);                                        //Drawing the angry chasing face\
+      \
+      //Draws the finish block\
+      fill(0, 0, 255);                                                                   	//Blue\
+      rect(870, 570, 30, 30);                                                            //Finishing block itself\
+    \}\
+  \}\
+\
+  //When the dot is at the final point (most bottom right)\
+  for (int i = 0; i < 30; i ++) \{  \
+    if (coordinateX == 885 && coordinateY == 585) \{\
+      win = true;\
+      gameRunning = false;                                                               //Game is now over\
+    \}\
+  \}\
+\
+  //When the enemy red chaser catches the user controlled circle\
+  if (chaseX <= coordinateX + 15 && chaseX + 30 >= coordinateX + 15 &&                   //X coordinate conditons\
+    chaseY <= coordinateY + 15 && chaseY + 30 >= coordinateY + 15) \{                     //Y coordinate conditions \
+    win = false;                                                                         //Used to determine the text shown when you lose ("You win" or "You lose")\
+    gameRunning = false;                                                                 //Game is now over\
+  \}\
+\
+  //When game is over, execute endGame screen\
+  if (gameRunning == false) \{\
+    endGame();\
+  \}\
+\}\
+\
+//This function will execute when the game is over\
+void endGame() \{\
+  \
+    //Background colour changes as number of points collected goes up\
+    if (pointCounter < 3) \{\
+      background(255);                                                                     //Grey background\
+    \} else if (pointCounter < 5) \{\
+      background(237, 175, 231);                                                           //Magenta background\
+    \} else if (pointCounter < 8) \{\
+      background(199, 0, 255);                                                             //Violet background\
+    \} else if (pointCounter < 11) \{\
+      background(0, 0, 255);                                                               //Blue background\
+    \} else if (pointCounter < 15) \{\
+      background(8, 255, 79);                                                              //Light green background\
+    \} else \{\
+      background(0);                                                                       //Black background (to be challenging by making it impossible to see)\
+    \}\
+\
+  fill(0);                                                                                  //White text\
+  textSize(100);                                                                            //Text size 50\
+\
+  //If the player won the game\
+  if (win == true) \{\
+    text("You win!", 250, 300);                                                             //Congratulates the player\
+  \}\
+  \
+  //If the player lost the game\
+  if (win == false)\{\
+    text("You lost!", 250, 300);                                                            //Taunt the player                  \
+  \}\
+\
+  textSize(50);\
+  text("Points: ", 350, 370);                                                               //Display 'points'\
+  text(pointCounter, 530, 370);                                                         //Display the number of points earned\
+  text("Press space to play again!", 155, 450);                                 //Option to play again\
+\}\
+\
+//This function will printout instructions\
+void Instructions() \{\
+  background(255);\
+  \
+  //Title\
+  textSize(100);\
+  text(" COLLECTOR ", 120, 100);\
+\
+  //Displaying instructions\
+  textSize(25);\
+  text("* Welcome to the points collector!", 15, 200);\
+  text("* Your goal is to collect points and make it to the", 15, 230);\
+  text("   bottom right corner. Only touch the center of the point!", 15, 265);\
+  text("* As you collect points, the background will change", 15, 300);\
+  text("   every 10 points", 16, 330);\
+  text("* Use the arrow keys to navigate", 15, 370);\
+  text("   your way around the maze.", 15, 405);\
+  text("* Avoid the chasing block and", 15, 450);\
+  text("   get to the bottom right if you can't survive", 15, 485);\
+\
+  text("* Good luck! *", 360, 525);\
+  text("* Hint: Use 'r' to teleport!", 260, 575);\
+\
+  //BEGIN THE GAME BUTTON\
+\
+  //Black rectangle\
+  fill(0);\
+  rect(600, 325, 250, 250);\
+\
+  //White word 'start'\
+  fill(255);\
+  text("START", 690, 455);\
+\}\
+\
+void mousePressed() \{\
+  //Press the 'start' button to begin the game\
+  if (mouseX < 850 && mouseX> 600 && mouseY > 325 && mouseY < 575) \{\
+    readInstructions = false;\
+  \}\
+\}\
+//Will draw the user-controlled point\
+\
+//Draw the user controlled block\
+void drawPoint() \{\
+  fill(0, 255, 0);                                                                         //Green\
+  ellipse(coordinateX, coordinateY, 30, 30);                                               //Draw it\
+\}\
+\
+//What will happen when keys are pressed on the keyboard\
+void keyPressed() \{\
+  if (key == 'r') \{\
+    xIndice = 1;\
+    yIndice = 1;\
+    println("r");\
+  \}\
+\
+  //arrow keys\
+  if (key == CODED) \{\
+\
+    //When up arrow key is pressed, the dot will move up 1 unit\
+    if (keyCode == UP && gameRunning == true) \{\
+      yIndice -=2 ;\
+      println("Up");\
+  \}\
+\
+    //When left arrow key is pressed, the dot will move left by 1 unit\
+    if (keyCode == LEFT & gameRunning == true) \{\
+      xIndice -=2;\
+      println("Left");\
+    \}\
+\
+    //When down arrow key is pressed, the dot will move down by 1 unit\
+    if (keyCode == DOWN & gameRunning == true) \{\
+      yIndice +=2;\
+      println("Down");\
+    \}\
+\
+    //When right arrow key is pressed, the dot will move right by 1 unit \
+    if (keyCode == RIGHT & gameRunning == true) \{\
+      xIndice +=2;\
+      println("Right");\
+    \}\
+  \}\
+\
+  //Every time a key is pressed, the chasing dot will move closer to the user controlled dot\
+\
+  //When user's circle is on the left of the chasing block\
+  if (chaseX < coordinateX & gameRunning == true) \{\
+    chaseX += 30;\
+  \} \
+\
+  //When user's circle is on the right of the chasing block\
+  if (chaseX > coordinateX & gameRunning == true) \{\
+    chaseX -= 30;\
+  \}\
+\
+  //When user's circle is below the chasing block\
+  if (chaseY < coordinateY & gameRunning == true) \{\
+    chaseY += 30;\
+  \} \
+\
+  //When user's circle is above the chasing block\
+  if (chaseY > coordinateY & gameRunning == true) \{\
+    chaseY -= 30;\
+  \}\
+\
+  //When space bar is pressed, game is reset.\
+  if (key == ' ') \{\
+    gameRunning = true;                                                                       //Should begin a new game\
+\
+    //User controlled circle\
+    pointX();                                                                                 //Spawn a new X coordinate for points block\
+    pointY();                                                                                 //Spawn a new Y coordinate for points block\
+\
+    //Chasing block\
+    chaseX = 870;                                                                             //Starting x coordinate of the chasing dot\
+    chaseY = 30;                                                                              //Starting y coordinate of the chasing dot\
+\
+    for (int i=0; i < 30; i++) \{\
+      pointCounter = 0;\
+      yIndice = 1;                                                                            //Sets y indice back to first block\
+      xIndice = 1;                                                                            //Sets x indice back to first block\
+      coordinateX = 15;                                                                       //Beginning X coordinate of maze\
+      coordinateY = 15;                                                                       //Beginning Y coordinate of maze\
+    \}\
+    println("Space");\
+  \}\
+\}\
+\
+//This function will generate random placements for special blocks which will give the player points.\
+//Random generation of x coordinate of the points block\
+int pointX() \{\
+  randomPointX = int(random(14, 871));                                                    //Generate some random value for x coordinate\
+  return randomPointX;\
+\}\
+\
+//Random generation of y coordinate of the points block\
+int pointY() \{\
+  randomPointY = int(random(14, 571));                                                      //Generate some random value for y coordinate\
+  return randomPointY;\
+\}}
